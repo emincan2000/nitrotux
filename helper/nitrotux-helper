@@ -1,0 +1,31 @@
+#!/bin/sh
+# nitrotux root helper: applies one of three fixed modes. Called via sudo -n.
+# Deliberately self-contained: reads no config and no environment, accepts only
+# the three literal mode names. Values must match nitrotux/profiles.py.
+set -u
+SYS=/sys
+
+case "${1:-}" in
+  quiet)       PL1=45;  PL2=65;  FAN=2 ;;
+  balanced)    PL1=115; PL2=115; FAN=2 ;;
+  performance) PL1=115; PL2=115; FAN=0 ;;
+  *) echo "usage: nitrotux-helper quiet|balanced|performance" >&2; exit 2 ;;
+esac
+[ $# -eq 1 ] || { echo "nitrotux-helper: exactly one argument" >&2; exit 2; }
+
+echo "$1" > "$SYS/firmware/acpi/platform_profile" || exit 1
+
+# CPU package power limits (MSR and MMIO RAPL, whichever exist)
+for r in "$SYS/class/powercap/intel-rapl:0" "$SYS/class/powercap/intel-rapl-mmio:0"; do
+  [ -d "$r" ] || continue
+  echo $((PL1 * 1000000)) > "$r/constraint_0_power_limit_uw" 2>/dev/null
+  echo $((PL2 * 1000000)) > "$r/constraint_1_power_limit_uw" 2>/dev/null
+done
+
+# acer_wmi fans: 2 = firmware auto, 0 = firmware turbo (full speed)
+for h in "$SYS"/class/hwmon/hwmon*; do
+  [ "$(cat "$h/name" 2>/dev/null)" = acer ] || continue
+  echo $FAN > "$h/pwm1_enable" 2>/dev/null
+  echo $FAN > "$h/pwm2_enable" 2>/dev/null
+done
+exit 0

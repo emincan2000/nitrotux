@@ -1,0 +1,6 @@
+# nitrotux: Acer Nitro AN515-58 NitroSense key (scancode 0xf5).
+# systemd's 60-keyboard.hwdb maps it to prog1 for other Nitro models but not
+# for the AN515-58, where it ends up as KEY_PRESENTATION (425) — above 255, so
+# X11 never sees it. prog1 shows up as XF86Launch1.
+evdev:atkbd:dmi:bvn*:bvr*:bd*:svnAcer*:pnNitro*AN*515-58:pvr*
+ KEYBOARD_KEY_f5=prog1
