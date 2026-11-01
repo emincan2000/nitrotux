@@ -27,6 +27,7 @@ class CliTest(unittest.TestCase):
         res = self.cli("status", sysfs=self.fs.root / "missing")
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertNotIn("None", res.stdout)
+        self.assertNotIn("asleep", res.stdout)
         self.assertIn("—", res.stdout)
 
     def test_status_json(self):

@@ -56,6 +56,12 @@ def _limits(pl1: int | None, pl2: int | None) -> str | None:
     return " · ".join(f"{name} {'—' if w is None else w} W" for name, w in pairs)
 
 
+def _gpu_power(runtime: str | None, t: T) -> str | None:
+    if runtime is None:
+        return None
+    return t("gpu_awake") if runtime == "active" else t("gpu_asleep")
+
+
 def _status(sysfs: Sysfs, as_json: bool, t: T) -> int:
     st = sysfs.read()
     if as_json:
@@ -68,7 +74,7 @@ def _status(sysfs: Sysfs, as_json: bool, t: T) -> int:
         (f"{t('cpu')} {t('fan')}", _fan(st.cpu_fan_rpm, st.cpu_fan_mode)),
         (f"{t('gpu')} {t('fan')}", _fan(st.gpu_fan_rpm, st.gpu_fan_mode)),
         (t("limits"), _limits(st.pl1_w, st.pl2_w)),
-        (t("gpu"), t("gpu_awake") if st.gpu_runtime == "active" else t("gpu_asleep")),
+        (t("gpu"), _gpu_power(st.gpu_runtime, t)),
     ]
     for k, v in rows:
         print(f"{k:<14} {v if v is not None else '—'}")
