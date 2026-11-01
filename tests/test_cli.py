@@ -17,11 +17,17 @@ class CliTest(unittest.TestCase):
         self.fs = FakeSys({"firmware/acpi/platform_profile": "quiet"})
         self.addCleanup(self.fs.cleanup)
 
-    def cli(self, *args, helper="/nonexistent/nitrotux-helper", lang="en"):
-        env = {**os.environ, "NITROTUX_SYSFS": str(self.fs.root), "NITROTUX_HELPER": helper,
+    def cli(self, *args, helper="/nonexistent/nitrotux-helper", lang="en", sysfs=None):
+        env = {**os.environ, "NITROTUX_SYSFS": str(sysfs or self.fs.root), "NITROTUX_HELPER": helper,
                "NITROTUX_LANG": lang, "PYTHONPATH": str(ROOT)}
         return subprocess.run([sys.executable, "-m", "nitrotux", *args],
                               capture_output=True, text=True, env=env, cwd=ROOT)
+
+    def test_status_without_sensors_shows_dashes(self):
+        res = self.cli("status", sysfs=self.fs.root / "missing")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertNotIn("None", res.stdout)
+        self.assertIn("—", res.stdout)
 
     def test_status_json(self):
         res = self.cli("status", "--json")
