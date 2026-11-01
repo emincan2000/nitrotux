@@ -43,6 +43,19 @@ def _switch(name: str, t: T, notify: bool) -> int:
     return 1
 
 
+def _fan(rpm: int | None, mode: str | None) -> str | None:
+    if rpm is None:
+        return None
+    return f"{rpm} RPM ({mode})" if mode else f"{rpm} RPM"
+
+
+def _limits(pl1: int | None, pl2: int | None) -> str | None:
+    if pl1 is None and pl2 is None:
+        return None
+    pairs = (("PL1", pl1), ("PL2", pl2))
+    return " · ".join(f"{name} {'—' if w is None else w} W" for name, w in pairs)
+
+
 def _status(sysfs: Sysfs, as_json: bool, t: T) -> int:
     st = sysfs.read()
     if as_json:
@@ -52,9 +65,9 @@ def _status(sysfs: Sysfs, as_json: bool, t: T) -> int:
         (t("modes"), t(st.profile) if st.profile in profiles.PROFILES else (st.profile or "?")),
         (f"{t('cpu')} °C", st.cpu_temp_c),
         (f"{t('gpu')} °C", st.ec_gpu_temp_c),
-        (f"{t('cpu')} {t('fan')}", f"{st.cpu_fan_rpm} RPM ({st.cpu_fan_mode})"),
-        (f"{t('gpu')} {t('fan')}", f"{st.gpu_fan_rpm} RPM ({st.gpu_fan_mode})"),
-        (t("limits"), f"PL1 {st.pl1_w} W · PL2 {st.pl2_w} W"),
+        (f"{t('cpu')} {t('fan')}", _fan(st.cpu_fan_rpm, st.cpu_fan_mode)),
+        (f"{t('gpu')} {t('fan')}", _fan(st.gpu_fan_rpm, st.gpu_fan_mode)),
+        (t("limits"), _limits(st.pl1_w, st.pl2_w)),
         (t("gpu"), t("gpu_awake") if st.gpu_runtime == "active" else t("gpu_asleep")),
     ]
     for k, v in rows:
